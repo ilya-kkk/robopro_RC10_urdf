@@ -1,0 +1,45 @@
+<launch>
+  <include
+    file="$(find gazebo_ros)/launch/empty_world.launch" />
+  
+  <!-- Загрузка URDF модели -->
+  <param
+    name="robot_description"
+    textfile="$(find RC10)/urdf/RC10.urdf" />
+  
+  <!-- Статическая трансформация от map к base_link -->
+  <node
+    name="map_to_base"
+    pkg="tf"
+    type="static_transform_publisher"
+    args="0 0 0 0 0 0 map base_link 100" />
+  
+  <!-- Трансформация от base_link к base_footprint -->
+  <node
+    name="tf_footprint_base"
+    pkg="tf"
+    type="static_transform_publisher"
+    args="0 0 0 0 0 0 base_link base_footprint 40" />
+  
+  <!-- Robot state publisher для публикации трансформаций -->
+  <node
+    name="robot_state_publisher"
+    pkg="robot_state_publisher"
+    type="robot_state_publisher"
+    output="screen" />
+  
+  <!-- Спавн модели в Gazebo -->
+  <node
+    name="spawn_model"
+    pkg="gazebo_ros"
+    type="spawn_model"
+    args="-urdf -param robot_description -model RC10"
+    output="screen" />
+  
+  <!-- Fake joint calibration -->
+  <node
+    name="fake_joint_calibration"
+    pkg="rostopic"
+    type="rostopic"
+    args="pub /calibrated std_msgs/Bool true" />
+</launch>
