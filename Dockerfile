@@ -1,11 +1,12 @@
-FROM osrf/ros:noetic-desktop-full
+FROM ros:humble-desktop-full
 
-# Установка необходимых зависимостей
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Установка необходимых зависимостей для сборки colcon и gazebo_ros
 RUN apt-get update && apt-get install -y \
+    python3-colcon-common-extensions \
     python3-rosdep \
-    python3-rosinstall \
-    python3-rosinstall-generator \
-    python3-wstool \
+    git \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
@@ -13,23 +14,24 @@ RUN apt-get update && apt-get install -y \
 RUN rosdep init || true
 RUN rosdep update
 
-# Создание catkin workspace
-RUN mkdir -p /catkin_ws/src
-WORKDIR /catkin_ws
+# Создание ROS 2 workspace
+RUN mkdir -p /ros2_ws/src
+WORKDIR /ros2_ws
 
 # Копирование пакета RC10
-COPY RC10 /catkin_ws/src/RC10
+COPY RC10 /ros2_ws/src/RC10
 
 # Установка зависимостей пакета
-RUN rosdep install --from-paths src --ignore-src -r -y || true
+RUN . /opt/ros/humble/setup.sh && \
+    rosdep install --from-paths src --ignore-src -r -y || true
 
-# Сборка workspace
-RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && \
-    catkin_make"
+# Сборка workspace через colcon
+RUN /bin/bash -c ". /opt/ros/humble/setup.bash && \
+    colcon build"
 
 # Добавление setup.bash в .bashrc
-RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-RUN echo "source /catkin_ws/devel/setup.bash" >> ~/.bashrc
+RUN echo \"source /opt/ros/humble/setup.bash\" >> ~/.bashrc && \
+    echo \"source /ros2_ws/install/setup.bash\" >> ~/.bashrc
 
-WORKDIR /catkin_ws
+WORKDIR /ros2_ws
 
